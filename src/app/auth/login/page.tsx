@@ -1,21 +1,36 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { loginPadler } from '@/lib/api';
-import { setAuthSession } from '@/lib/auth';
+import { saveSessionFromLogin } from '@/lib/auth';
 import { Eye, EyeOff, LayoutDashboard } from 'lucide-react';
 import { AuthBrandPanel } from '@/app/auth/components/AuthBrandPanel';
 import { AuthAnimations } from '@/app/auth/components/AuthAnimations';
+import { Button } from '@/components/ui/button';
+import { FieldLabel, Input } from '@/components/ui/field';
+import { DetailSkeleton } from '@/components/ui/skeleton';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+
+  useEffect(() => {
+    if (searchParams.get('session') === 'idle') {
+      setInfo('You were signed out after 45 minutes of inactivity. Please sign in again.');
+    } else if (searchParams.get('session') === 'expired') {
+      setInfo('Your session has expired. Please sign in again.');
+    } else {
+      setInfo('');
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -24,117 +39,127 @@ export default function LoginPage() {
     try {
       const auth = await loginPadler(email, password);
       if (!auth.accessToken) {
-        setError('Login response missing access token.');
+        setError('Sign-in response missing access token.');
         return;
       }
-      setAuthSession({
+      saveSessionFromLogin({
         accessToken: auth.accessToken,
+        refreshToken: auth.refreshToken,
+        expiresIn: auth.expiresIn,
         email: auth.email,
         userId: auth.userId,
         designation: auth.designation
       });
-      router.replace('/dashboard');
+      const next = searchParams.get('next');
+      router.replace(next && next.startsWith('/') ? next : '/today');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to login.');
+      setError(err instanceof Error ? err.message : 'Unable to sign in.');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <main className="padler-auth-main" style={{ minHeight: '100vh', display: 'flex', background: '#f8fafc' }}>
-      <div className="padler-auth-brand" style={{ flex: 1, display: 'flex' }}>
+    <form
+      onSubmit={handleSubmit}
+      className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-7 shadow-[0_14px_30px_rgba(15,23,42,0.08)]"
+    >
+      <div className="mb-6 lg:hidden">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Padler</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Care console</h1>
+      </div>
+      <h2 className="m-0 text-3xl font-semibold tracking-tight text-slate-950">Sign in</h2>
+      <p className="mt-1.5 text-sm text-slate-500">Access your Padler workspace</p>
+
+      {info ? (
+        <div
+          className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900"
+          role="status"
+        >
+          {info}
+        </div>
+      ) : null}
+
+      {error ? (
+        <div
+          className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800"
+          role="alert"
+        >
+          {error}
+        </div>
+      ) : null}
+
+      <div className="mt-5 space-y-4">
+        <FieldLabel>
+          Email
+          <Input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+            autoComplete="username"
+          />
+        </FieldLabel>
+
+        <FieldLabel>
+          Password
+          <div className="relative">
+            <Input
+              type={showPassword ? 'text' : 'password'}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              className="pr-11"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </FieldLabel>
+      </div>
+
+      <div className="mt-3 text-right">
+        <Link href="/auth/forgot-password" className="text-sm font-semibold text-blue-700 hover:underline">
+          Forgot password?
+        </Link>
+      </div>
+
+      <Button type="submit" variant="primary" className="mt-5 w-full" disabled={submitting}>
+        {submitting ? 'Signing in…' : 'Sign in'}
+      </Button>
+    </form>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <main className="flex min-h-screen bg-slate-50">
+      <div className="hidden flex-1 lg:flex">
         <AuthBrandPanel
           title="Welcome back"
-          subtitle="Padler Admin Console"
-          description="Sign in to manage bookings, customers, wallet activity, and audit actions across your services in one place."
+          subtitle="Care console"
+          description="Sign in to help customers with cases, payments, bookings, and product accounts — without needing technical support."
           bullets={[
-            'Role-based access for Super Admin and Admin users',
-            'Secure authentication via your existing Nomadicpod stack'
+            'Start from Today and My cases',
+            'Request actions from a case when needed',
+            'Use Fix problems tools only when a runbook says so'
           ]}
           icon={<LayoutDashboard size={34} />}
         />
       </div>
 
-      <section style={{ flex: 1, display: 'grid', placeItems: 'center', padding: 24 }}>
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            width: '100%',
-            maxWidth: 420,
-            background: '#ffffff',
-            borderRadius: 16,
-            border: '1px solid #e2e8f0',
-            padding: 28,
-            boxShadow: '0 14px 30px rgba(15,23,42,0.08)'
-          }}
-        >
-          <h2 style={{ marginTop: 0, marginBottom: 6, fontSize: 30 }}>Sign In</h2>
-          <p style={{ marginTop: 0, marginBottom: 20, color: '#64748b' }}>Access your Padler workspace</p>
-
-          {error ? (
-            <div style={{ marginBottom: 12, border: '1px solid #fecaca', color: '#b91c1c', borderRadius: 10, background: '#fef2f2', padding: '10px 12px', fontSize: 13 }}>
-              {error}
-            </div>
-          ) : null}
-
-          <label style={{ display: 'grid', gap: 7, marginTop: 6 }}>
-            <span style={{ fontSize: 14, color: '#334155' }}>Email Address</span>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
-              style={{ padding: '12px 13px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }}
-            />
-          </label>
-
-          <label style={{ display: 'grid', gap: 7, marginTop: 14 }}>
-            <span style={{ fontSize: 14, color: '#334155' }}>Password</span>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                style={{ width: '100%', padding: '12px 40px 12px 13px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((s) => !s)}
-                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b' }}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </label>
-          <div style={{ textAlign: 'right', marginTop: 10 }}>
-            <Link href="/auth/forgot-password" style={{ color: '#2563eb', fontSize: 13, fontWeight: 600 }}>
-              Forgot password?
-            </Link>
-          </div>
-
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{
-              marginTop: 18,
-              width: '100%',
-              border: 'none',
-              borderRadius: 10,
-              background: '#2563eb',
-              color: 'white',
-              padding: '12px 12px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            {submitting ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
+      <section className="grid flex-1 place-items-center p-6">
+        <Suspense fallback={<div className="p-8"><DetailSkeleton /></div>}>
+          <LoginForm />
+        </Suspense>
       </section>
 
       <AuthAnimations />

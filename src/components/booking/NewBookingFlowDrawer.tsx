@@ -1,8 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { X } from 'lucide-react';
 import { BookingDownloadSuccessModal } from '@/components/booking/BookingDownloadSuccessModal';
+import { Button } from '@/components/ui/button';
+import { DetailSkeleton } from '@/components/ui/skeleton';
+import { SideDrawer } from '@/components/ui/side-drawer';
+import { formatDateTime, formatMoney } from '@/lib/utils';
 import { TripSeatGrid } from '@/components/booking/TripSeatGrid';
 import {
   downloadBookingTicketPdf,
@@ -111,16 +114,6 @@ function compareTerminals(a: TerminalListItem, b: TerminalListItem): number {
   return sa.localeCompare(sb);
 }
 
-function formatDepartureForTicket(iso?: string): string {
-  if (!iso?.trim()) {
-    return 'N/A';
-  }
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) {
-    return iso.trim();
-  }
-  return d.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
-}
 
 function buildTicketPdfInput(
   trip: TripDetail,
@@ -143,7 +136,7 @@ function buildTicketPdfInput(
     seatNumber: seatStr || 'N/A',
     status: 'Confirmed',
     priceLabel,
-    dateLabel: formatDepartureForTicket(trip.departureTime),
+    dateLabel: formatDateTime(trip.departureTime),
     companyName: trip.transportCompanyName?.trim() || 'Transport',
     routeLine
   };
@@ -747,31 +740,95 @@ export function NewBookingFlowDrawer({
     }
   };
 
-  if (!open) {
-    return null;
-  }
+  const stepIndex = ({ search: 0, trips: 1, seats: 2, details: 3 } as const)[step];
+  const stepLabels = ['Search', 'Trips', 'Seats', 'Details'] as const;
+
+  const footer = (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap gap-1.5">
+        {stepLabels.map((label, i) => (
+          <span
+            key={label}
+            className={
+              i === stepIndex
+                ? 'rounded-full bg-blue-700 px-2.5 py-1 text-xs font-semibold text-white'
+                : i < stepIndex
+                  ? 'rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700'
+                  : 'rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-400'
+            }
+          >
+            {i + 1}. {label}
+          </span>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {step === 'search' ? (
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => void runSearch()}
+            disabled={searching || terminalsLoading}
+          >
+            {searching ? 'Searching…' : 'Search trips'}
+          </Button>
+        ) : null}
+        {step === 'trips' ? (
+          <Button type="button" onClick={() => setStep('search')}>
+            Back
+          </Button>
+        ) : null}
+        {step === 'seats' ? (
+          <>
+            <Button
+              type="button"
+              onClick={() => {
+                setStep('trips');
+                setSelectedSeats([]);
+                setTripDetail(null);
+              }}
+            >
+              Back
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              disabled={selectedSeats.length === 0 || !!loadTripError || !tripDetail}
+              onClick={() => setStep('details')}
+            >
+              Continue
+            </Button>
+          </>
+        ) : null}
+        {step === 'details' ? (
+          <>
+            <Button type="button" onClick={() => setStep('seats')}>
+              Back
+            </Button>
+            <Button type="button" variant="primary" disabled={submitting} onClick={() => void submit()}>
+              {submitting ? 'Submitting…' : 'Submit booking'}
+            </Button>
+          </>
+        ) : null}
+        <Button type="button" variant="ghost" onClick={dismissDrawer}>
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <>
-      <div
-        className="padler-drawer-backdrop"
-        role="presentation"
-        onClick={dismissDrawer}
-        onKeyDown={(e) => e.key === 'Escape' && dismissDrawer()}
-      />
-      <div
-        className="padler-drawer-panel padler-drawer-panel--open padler-drawer-panel--wide"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="padler-new-booking-title"
+      <SideDrawer
+        open={open}
+        onOpenChange={(next) => {
+          if (!next) dismissDrawer();
+        }}
+        title="New booking"
+        description="Search trips, pick seats, and enter traveller details."
+        width="xl"
+        footer={footer}
       >
-        <div className="padler-drawer-header">
-          <span id="padler-new-booking-title">New booking</span>
-          <button type="button" className="padler-icon-btn" onClick={dismissDrawer} aria-label="Close">
-            <X size={20} />
-          </button>
-        </div>
-        <div className="padler-drawer-body">
+        <div className="space-y-4">
           {drawerError ? (
             <div
               role="alert"
@@ -817,7 +874,7 @@ export function NewBookingFlowDrawer({
                 </div>
               ) : null}
               {terminalsLoading ? (
-                <p style={{ fontSize: 13, color: 'var(--padler-ink-muted)' }}>Loading terminals…</p>
+                <DetailSkeleton />
               ) : null}
               {terminalsError ? (
                 <div
@@ -875,27 +932,13 @@ export function NewBookingFlowDrawer({
                 </p>
               ) : null}
               {searchError ? <p style={{ color: '#b91c1c', fontSize: 13 }}>{searchError}</p> : null}
-              <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className="padler-action padler-action--primary"
-                  onClick={() => void runSearch()}
-                  disabled={searching || terminalsLoading}
-                >
-                  {searching ? 'Searching…' : 'Search trips'}
-                </button>
-              </div>
+
             </>
           ) : null}
 
           {step === 'trips' ? (
             <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <h3 style={{ margin: 0, fontSize: 16 }}>Choose a trip</h3>
-                <button type="button" className="padler-action" onClick={() => setStep('search')}>
-                  Back
-                </button>
-              </div>
+              <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>Choose a trip</h3>
               {companyDisplayForFilter && filteredResults.length < results.length ? (
                 <p style={{ fontSize: 12, color: 'var(--padler-ink-muted)' }}>
                   Filtered to trips matching the selected company ({companyDisplayForFilter}).
@@ -912,8 +955,8 @@ export function NewBookingFlowDrawer({
                     >
                       <div style={{ fontWeight: 600, fontSize: 14 }}>{r.routeOrigin} → {r.routeDestination}</div>
                       <div style={{ fontSize: 12, color: 'var(--padler-ink-muted)' }}>{r.transportCompanyName}</div>
-                      <div style={{ fontSize: 12 }}>Departs {r.departureTime ? String(r.departureTime) : '—'}</div>
-                      <div style={{ fontSize: 12 }}>From NGN {r.basePrice != null ? r.basePrice.toLocaleString() : '—'}</div>
+                      <div style={{ fontSize: 12 }}>Departs {formatDateTime(r.departureTime ? String(r.departureTime) : undefined)}</div>
+                      <div style={{ fontSize: 12 }}>From {formatMoney(r.basePrice)}</div>
                       <button
                         type="button"
                         className="padler-action padler-action--primary"
@@ -933,20 +976,7 @@ export function NewBookingFlowDrawer({
             <>
               {step === 'seats' ? (
                 <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0, fontSize: 16 }}>Select seat(s)</h3>
-                    <button
-                      type="button"
-                      className="padler-action"
-                      onClick={() => {
-                        setStep('trips');
-                        setSelectedSeats([]);
-                        setTripDetail(null);
-                      }}
-                    >
-                      Back
-                    </button>
-                  </div>
+                  <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>Select seat(s)</h3>
                   {loadTripError ? <p style={{ color: '#b91c1c' }}>{loadTripError}</p> : null}
                   {tripDetail && !loadTripError ? (
                     <>
@@ -996,29 +1026,17 @@ export function NewBookingFlowDrawer({
                       <p style={{ fontSize: 13 }}>
                         Selected: {selectedSeats.length ? selectedSeats.join(', ') : '—'}
                       </p>
-                      <button
-                        type="button"
-                        className="padler-action padler-action--primary"
-                        disabled={selectedSeats.length === 0}
-                        onClick={() => setStep('details')}
-                      >
-                        Continue
-                      </button>
+
                     </>
                   ) : !loadTripError ? (
-                    <p>Loading…</p>
+                    <DetailSkeleton />
                   ) : null}
                 </>
               ) : null}
 
               {step === 'details' ? (
                 <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0, fontSize: 16 }}>Traveller details</h3>
-                    <button type="button" className="padler-action" onClick={() => setStep('seats')}>
-                      Back
-                    </button>
-                  </div>
+                  <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>Traveller details</h3>
                   <p style={{ fontSize: 12, color: 'var(--padler-ink-muted)' }}>
                     Primary passenger: full profile. Additional passengers: name, email, and phone.
                   </p>
@@ -1227,22 +1245,13 @@ export function NewBookingFlowDrawer({
                       </div>
                     </section>
                   ))}
-                  <div style={{ marginTop: 16 }}>
-                    <button
-                      type="button"
-                      className="padler-action padler-action--primary"
-                      disabled={submitting}
-                      onClick={() => void submit()}
-                    >
-                      {submitting ? 'Submitting…' : 'Submit booking'}
-                    </button>
-                  </div>
+
                 </>
               ) : null}
             </>
           ) : null}
         </div>
-      </div>
+      </SideDrawer>
       <BookingDownloadSuccessModal
         open={!!ticketDownload}
         message={

@@ -1,6 +1,7 @@
 /**
  * Client-side road ticket PDF (same layout as efex verify / public booking confirm).
  */
+import axios from 'axios';
 import { jsPDF } from 'jspdf';
 
 export type BookingTicketPdfInput = {
@@ -34,9 +35,7 @@ async function resolveImageDataUrl(url?: string) {
   if (!url || !url.trim()) return null;
   if (url.startsWith('data:image')) return url;
   try {
-    const response = await fetch(url, { mode: 'cors' });
-    if (!response.ok) return null;
-    const blob = await response.blob();
+    const { data: blob } = await axios.get<Blob>(url, { responseType: 'blob' });
     return await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result));

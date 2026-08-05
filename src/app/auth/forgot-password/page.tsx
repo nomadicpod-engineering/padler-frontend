@@ -7,6 +7,8 @@ import { forgotPadlerPassword } from '@/lib/api';
 import { MailCheck } from 'lucide-react';
 import { AuthBrandPanel } from '@/app/auth/components/AuthBrandPanel';
 import { AuthAnimations } from '@/app/auth/components/AuthAnimations';
+import { Button } from '@/components/ui/button';
+import { FieldLabel, Input } from '@/components/ui/field';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -32,70 +34,57 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main className="padler-auth-main" style={{ minHeight: '100vh', display: 'flex', background: '#f8fafc' }}>
-      <div className="padler-auth-brand" style={{ flex: 1, display: 'flex' }}>
+    <main className="flex min-h-screen bg-slate-50">
+      <div className="hidden flex-1 lg:flex">
         <AuthBrandPanel
           title="Reset access"
-          subtitle="Padler Admin Console"
-          description="Submit your account email to receive a verification code and reset your password securely."
-          bullets={['Use the same email tied to your Padler account', 'Your code will be required on the next screen']}
+          subtitle="Care console"
+          description="Enter the email on your Padler account. We’ll send a code so you can choose a new password."
+          bullets={['Use the email tied to your Padler account', 'You’ll need the code on the next screen']}
           icon={<MailCheck size={34} />}
         />
       </div>
 
-      <section style={{ flex: 1, display: 'grid', placeItems: 'center', padding: 24 }}>
+      <section className="grid flex-1 place-items-center p-6">
         <form
           onSubmit={handleSubmit}
-          style={{
-            width: '100%',
-            maxWidth: 420,
-            background: '#ffffff',
-            borderRadius: 16,
-            border: '1px solid #e2e8f0',
-            padding: 28,
-            boxShadow: '0 14px 30px rgba(15,23,42,0.08)'
-          }}
+          className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-7 shadow-[0_14px_30px_rgba(15,23,42,0.08)]"
         >
-          <h2 style={{ marginTop: 0, marginBottom: 6, fontSize: 30 }}>Forgot Password</h2>
-          <p style={{ marginTop: 0, marginBottom: 20, color: '#64748b' }}>We&apos;ll send you a reset verification code.</p>
+          <h2 className="m-0 text-3xl font-semibold tracking-tight text-slate-950">Forgot password</h2>
+          <p className="mt-1.5 text-sm text-slate-500">We’ll send you a verification code.</p>
 
-          {error ? <div style={{ marginBottom: 12, border: '1px solid #fecaca', color: '#b91c1c', borderRadius: 10, background: '#fef2f2', padding: '10px 12px', fontSize: 13 }}>{error}</div> : null}
-          {success ? <div style={{ marginBottom: 12, border: '1px solid #86efac', color: '#166534', borderRadius: 10, background: '#f0fdf4', padding: '10px 12px', fontSize: 13 }}>{success}</div> : null}
+          {error ? (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800" role="alert">
+              {error}
+            </div>
+          ) : null}
+          {success ? (
+            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
+              {success}
+            </div>
+          ) : null}
 
-          <label style={{ display: 'grid', gap: 7, marginTop: 6 }}>
-            <span style={{ fontSize: 14, color: '#334155' }}>Email Address</span>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
-              style={{ padding: '12px 13px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }}
-            />
-          </label>
+          <div className="mt-5">
+            <FieldLabel>
+              Email
+              <Input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@company.com"
+              />
+            </FieldLabel>
+          </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{
-              marginTop: 18,
-              width: '100%',
-              border: 'none',
-              borderRadius: 10,
-              background: '#2563eb',
-              color: 'white',
-              padding: '12px 12px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            {submitting ? 'Sending...' : 'Send Verification Code'}
-          </button>
+          <Button type="submit" variant="primary" className="mt-5 w-full" disabled={submitting}>
+            {submitting ? 'Sending…' : 'Send verification code'}
+          </Button>
 
-          <p style={{ marginTop: 14, marginBottom: 0, fontSize: 13, color: '#64748b', textAlign: 'center' }}>
+          <p className="mt-4 text-center text-sm text-slate-500">
             Remembered your password?{' '}
-            <Link href="/auth/login" style={{ color: '#2563eb', fontWeight: 600 }}>
-              Back to Sign In
+            <Link href="/auth/login" className="font-semibold text-blue-700 hover:underline">
+              Back to sign in
             </Link>
           </p>
         </form>

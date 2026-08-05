@@ -8,6 +8,9 @@ import { resetPadlerPassword } from '@/lib/api';
 import { KeyRound } from 'lucide-react';
 import { AuthBrandPanel } from '@/app/auth/components/AuthBrandPanel';
 import { AuthAnimations } from '@/app/auth/components/AuthAnimations';
+import { Button } from '@/components/ui/button';
+import { FieldLabel, Input } from '@/components/ui/field';
+import { PageSkeleton } from '@/components/ui/skeleton';
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -32,7 +35,7 @@ function ResetPasswordContent() {
         newPassword,
         confirmPassword
       });
-      setSuccess('Password reset successful. Redirecting to login...');
+      setSuccess('Password reset successful. Redirecting to sign in…');
       setTimeout(() => router.replace('/auth/login'), 900);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to reset password.');
@@ -42,106 +45,87 @@ function ResetPasswordContent() {
   };
 
   return (
-    <main className="padler-auth-main" style={{ minHeight: '100vh', display: 'flex', background: '#f8fafc' }}>
-      <div className="padler-auth-brand" style={{ flex: 1, display: 'flex' }}>
+    <main className="flex min-h-screen bg-slate-50">
+      <div className="hidden flex-1 lg:flex">
         <AuthBrandPanel
           title="Set a new password"
-          subtitle="Padler Admin Console"
-          description="Enter your verification code and choose a new secure password to restore access."
-          bullets={['Verification code is required', 'Use matching new and confirm password values']}
+          subtitle="Care console"
+          description="Enter the verification code from your email and choose a new password."
+          bullets={['Verification code is required', 'New password and confirm password must match']}
           icon={<KeyRound size={34} />}
         />
       </div>
 
-      <section style={{ flex: 1, display: 'grid', placeItems: 'center', padding: 24 }}>
+      <section className="grid flex-1 place-items-center p-6">
         <form
           onSubmit={handleSubmit}
-          style={{
-            width: '100%',
-            maxWidth: 420,
-            background: '#ffffff',
-            borderRadius: 16,
-            border: '1px solid #e2e8f0',
-            padding: 28,
-            boxShadow: '0 14px 30px rgba(15,23,42,0.08)'
-          }}
+          className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-7 shadow-[0_14px_30px_rgba(15,23,42,0.08)]"
         >
-          <h2 style={{ marginTop: 0, marginBottom: 6, fontSize: 30 }}>Reset Password</h2>
-          <p style={{ marginTop: 0, marginBottom: 20, color: '#64748b' }}>Use the code sent to your email.</p>
+          <h2 className="m-0 text-3xl font-semibold tracking-tight text-slate-950">Reset password</h2>
+          <p className="mt-1.5 text-sm text-slate-500">Use the code sent to your email.</p>
 
-          {error ? <div style={{ marginBottom: 12, border: '1px solid #fecaca', color: '#b91c1c', borderRadius: 10, background: '#fef2f2', padding: '10px 12px', fontSize: 13 }}>{error}</div> : null}
-          {success ? <div style={{ marginBottom: 12, border: '1px solid #86efac', color: '#166534', borderRadius: 10, background: '#f0fdf4', padding: '10px 12px', fontSize: 13 }}>{success}</div> : null}
+          {error ? (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800" role="alert">
+              {error}
+            </div>
+          ) : null}
+          {success ? (
+            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
+              {success}
+            </div>
+          ) : null}
 
-          <label style={{ display: 'grid', gap: 7, marginTop: 6 }}>
-            <span style={{ fontSize: 14, color: '#334155' }}>Email Address</span>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
-              style={{ padding: '12px 13px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }}
-            />
-          </label>
+          <div className="mt-5 space-y-4">
+            <FieldLabel>
+              Email
+              <Input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@company.com"
+              />
+            </FieldLabel>
+            <FieldLabel>
+              Verification code
+              <Input
+                type="text"
+                required
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value)}
+                placeholder="Enter code"
+              />
+            </FieldLabel>
+            <FieldLabel>
+              New password
+              <Input
+                type="password"
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+              />
+            </FieldLabel>
+            <FieldLabel>
+              Confirm password
+              <Input
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+              />
+            </FieldLabel>
+          </div>
 
-          <label style={{ display: 'grid', gap: 7, marginTop: 14 }}>
-            <span style={{ fontSize: 14, color: '#334155' }}>Verification Code</span>
-            <input
-              type="text"
-              required
-              value={verificationCode}
-              onChange={(e) => setVerificationCode(e.target.value)}
-              placeholder="Enter code"
-              style={{ padding: '12px 13px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }}
-            />
-          </label>
+          <Button type="submit" variant="primary" className="mt-5 w-full" disabled={submitting}>
+            {submitting ? 'Resetting…' : 'Reset password'}
+          </Button>
 
-          <label style={{ display: 'grid', gap: 7, marginTop: 14 }}>
-            <span style={{ fontSize: 14, color: '#334155' }}>New Password</span>
-            <input
-              type="password"
-              required
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Enter new password"
-              style={{ padding: '12px 13px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }}
-            />
-          </label>
-
-          <label style={{ display: 'grid', gap: 7, marginTop: 14 }}>
-            <span style={{ fontSize: 14, color: '#334155' }}>Confirm Password</span>
-            <input
-              type="password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm new password"
-              style={{ padding: '12px 13px', borderRadius: 10, border: '1px solid #cbd5e1', outline: 'none' }}
-            />
-          </label>
-
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{
-              marginTop: 18,
-              width: '100%',
-              border: 'none',
-              borderRadius: 10,
-              background: '#2563eb',
-              color: 'white',
-              padding: '12px 12px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            {submitting ? 'Resetting...' : 'Reset Password'}
-          </button>
-
-          <p style={{ marginTop: 14, marginBottom: 0, fontSize: 13, color: '#64748b', textAlign: 'center' }}>
+          <p className="mt-4 text-center text-sm text-slate-500">
             Back to{' '}
-            <Link href="/auth/login" style={{ color: '#2563eb', fontWeight: 600 }}>
-              Sign In
+            <Link href="/auth/login" className="font-semibold text-blue-700 hover:underline">
+              Sign in
             </Link>
           </p>
         </form>
@@ -153,7 +137,11 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>Loading...</main>}>
+    <Suspense
+      fallback={
+        <main className="mx-auto max-w-7xl px-4 py-8"><PageSkeleton /></main>
+      }
+    >
       <ResetPasswordContent />
     </Suspense>
   );

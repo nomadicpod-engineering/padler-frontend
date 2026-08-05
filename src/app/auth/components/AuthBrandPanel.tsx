@@ -13,80 +13,33 @@ type AuthBrandPanelProps = {
 
 export function AuthBrandPanel({ title, subtitle, description, bullets, icon }: AuthBrandPanelProps) {
   return (
-    <section
-      style={{
-        flex: 1,
-        display: 'flex',
-        background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #0f172a 100%)',
-        color: 'white',
-        padding: 48,
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative',
-        overflow: 'hidden'
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          top: 50,
-          left: 60,
-          width: 52,
-          height: 52,
-          borderRadius: 999,
-          background: 'rgba(255,255,255,0.14)',
-          display: 'grid',
-          placeItems: 'center',
-          animation: 'floatUpDown 4s ease-in-out infinite'
-        }}
-      >
+    <section className="relative flex flex-1 items-center justify-center overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-slate-950 px-10 py-12 text-white">
+      <div className="pointer-events-none absolute left-14 top-12 grid size-12 place-items-center rounded-full bg-white/15 motion-safe:animate-[floatUpDown_4s_ease-in-out_infinite]">
         <ShieldCheck size={24} />
       </div>
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 70,
-          right: 90,
-          width: 56,
-          height: 56,
-          borderRadius: 999,
-          background: 'rgba(255,255,255,0.14)',
-          display: 'grid',
-          placeItems: 'center',
-          animation: 'floatUpDown 5.2s ease-in-out infinite'
-        }}
-      >
+      <div className="pointer-events-none absolute bottom-16 right-20 grid size-14 place-items-center rounded-full bg-white/15 motion-safe:animate-[floatUpDown_5.2s_ease-in-out_infinite]">
         <CheckCircle2 size={26} />
       </div>
-      <div style={{ maxWidth: 460 }}>
-        <div
-          style={{
-            width: 68,
-            height: 68,
-            borderRadius: 999,
-            display: 'grid',
-            placeItems: 'center',
-            marginBottom: 20,
-            background: 'rgba(255,255,255,0.16)',
-            animation: 'softPulse 2.8s ease-in-out infinite'
-          }}
-        >
+      <div className="relative z-10 max-w-md">
+        <div className="mb-5 grid size-[68px] place-items-center rounded-full bg-white/15 motion-safe:animate-[softPulse_2.8s_ease-in-out_infinite]">
           {icon ?? <LayoutDashboard size={34} />}
         </div>
-        <h1 style={{ fontSize: 42, margin: '0 0 10px 0', animation: 'slideFadeIn 0.7s ease-out' }}>{title}</h1>
-        <p style={{ margin: 0, fontSize: 18, color: '#bfdbfe' }}>{subtitle}</p>
-        <p style={{ marginTop: 28, marginBottom: 0, color: '#dbeafe', lineHeight: 1.55, animation: 'slideFadeIn 0.95s ease-out' }}>
+        <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-blue-200">Padler</p>
+        <h1 className="m-0 text-4xl font-semibold tracking-tight motion-safe:animate-[slideFadeIn_0.7s_ease-out]">
+          {title}
+        </h1>
+        <p className="mt-2 text-lg text-blue-100">{subtitle}</p>
+        <p className="mt-7 leading-relaxed text-blue-50/90 motion-safe:animate-[slideFadeIn_0.95s_ease-out]">
           {description}
         </p>
-
-        <div style={{ marginTop: 30, display: 'grid', gap: 16 }}>
-          {bullets.map((bullet, index) => (
-            <div key={bullet} style={{ display: 'flex', gap: 10, alignItems: 'center', animation: `slideFadeIn ${1.15 + index * 0.2}s ease-out` }}>
-              {index % 2 === 0 ? <ShieldCheck size={18} /> : <CheckCircle2 size={18} />}
-              <span style={{ color: '#e2e8f0' }}>{bullet}</span>
-            </div>
+        <ul className="mt-6 space-y-3">
+          {bullets.map((bullet) => (
+            <li key={bullet} className="flex items-start gap-2 text-sm text-blue-50">
+              <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-teal-300" />
+              <span>{bullet}</span>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   );
