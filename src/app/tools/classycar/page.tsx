@@ -8,6 +8,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 import { PageHeader, StatePanel } from '@/components/ui/page';
 import { fetchClassycarHub } from '@/lib/api/classycar-tools';
 import { isForbiddenError } from '@/lib/api';
+import { NPOD_AUTO_LABEL } from '@/lib/product-labels';
 
 export default function ClassycarHubPage() {
   const [hub, setHub] = useState<Record<string, unknown> | null>(null);
@@ -23,7 +24,7 @@ export default function ClassycarHubPage() {
       setHub(await fetchClassycarHub());
     } catch (e) {
       if (isForbiddenError(e)) setForbidden(true);
-      else setError(e instanceof Error ? e.message : 'Unable to load ClassyCar hub');
+      else setError(e instanceof Error ? e.message : `Unable to load ${NPOD_AUTO_LABEL} hub`);
     } finally {
       setLoading(false);
     }
@@ -37,7 +38,7 @@ export default function ClassycarHubPage() {
     <PadlerShell>
       <PageHeader
         eyebrow="Fix problems"
-        title="Classycar"
+        title={NPOD_AUTO_LABEL}
         subtitle="Dealers — confirm booking, confirm payment, withdrawals."
         actions={
           <Button type="button" onClick={() => void load()} disabled={loading}>

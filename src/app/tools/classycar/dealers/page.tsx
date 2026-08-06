@@ -77,14 +77,14 @@ export default function ClassycarDealersPage() {
   return (
     <PadlerShell>
       <PageHeader
-        eyebrow="ClassyCar"
+        eyebrow="Npod-Auto"
         title="Dealers"
         subtitle="Open a dealer for KYB and booking/payment journey."
       />
 
       <p className="mb-4 text-sm text-slate-500">
         <Link href="/tools/classycar" className="font-semibold text-blue-700 hover:underline">
-          ← ClassyCar hub
+          ← Npod-Auto hub
         </Link>
       </p>
 

@@ -84,7 +84,7 @@ export default function ClassycarDealerJourneyPage() {
   return (
     <PadlerShell>
       <ToolsProductShell
-        productLabel="ClassyCar"
+        productLabel="Npod-Auto"
         productHref="/tools/classycar"
         listLabel="Dealers"
         listHref="/tools/classycar/dealers"

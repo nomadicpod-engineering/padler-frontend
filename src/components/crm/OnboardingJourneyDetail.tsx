@@ -20,6 +20,7 @@ import { OnboardingDocumentPreview } from '@/components/crm/OnboardingDocumentPr
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn, formatDateTime } from '@/lib/utils';
+import { productDisplayLabel } from '@/lib/product-labels';
 
 
 function lifecycleTone(status?: string): 'success' | 'danger' | 'warning' | 'neutral' | 'info' {
@@ -37,20 +38,7 @@ function boolTone(value: boolean | null | undefined, falseTone: 'danger' | 'warn
 }
 
 function productLabel(productKey?: string | null): string {
-  switch (productKey) {
-    case 'classycar':
-      return 'Classycar';
-    case 'trip-jotter':
-      return 'Trip Jotter';
-    case 'capslocker':
-      return 'Identity';
-    case 'npod':
-      return 'Npod';
-    case 'drift':
-      return 'Npod Rider';
-    default:
-      return productKey ?? 'Product';
-  }
+  return productDisplayLabel(productKey);
 }
 
 const PROFILE_FIELD_LABELS: Record<string, string> = {

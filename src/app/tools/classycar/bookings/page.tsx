@@ -105,14 +105,14 @@ export default function ClassycarBookingsPage() {
   return (
     <PadlerShell>
       <PageHeader
-        eyebrow="ClassyCar"
+        eyebrow="Npod-Auto"
         title="Bookings"
         subtitle="Confirm pending bookings (heal). Search applies to loaded list."
       />
 
       <p className="mb-4 text-sm text-slate-500">
         <Link href="/tools/classycar" className="font-semibold text-blue-700 hover:underline">
-          ← ClassyCar hub
+          ← Npod-Auto hub
         </Link>
       </p>
 
