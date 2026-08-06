@@ -173,7 +173,7 @@ export default function NpodHubPage() {
           <Link href="/tools/classycar" className="group block">
             <Card className="h-full transition duration-200 group-hover:-translate-y-0.5 group-hover:border-blue-200 group-hover:shadow-md motion-reduce:transform-none">
               <CardHeader>
-                <CardTitle>ClassyCar</CardTitle>
+                <CardTitle>Npod-Auto</CardTitle>
                 <CardDescription>Rental / sale</CardDescription>
               </CardHeader>
             </Card>

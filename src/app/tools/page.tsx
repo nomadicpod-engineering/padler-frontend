@@ -30,7 +30,7 @@ const hubs = [
   },
   {
     href: '/tools/classycar',
-    title: 'Classycar',
+    title: 'Npod-Auto',
     description: 'Dealers, booking confirmation, stuck payments, and withdrawals.',
     icon: Car
   },

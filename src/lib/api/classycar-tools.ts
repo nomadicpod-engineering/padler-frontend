@@ -3,7 +3,7 @@ import { toolsGet, toolsPost, type ToolsUsage } from './tools-shared';
 export type { ToolsUsage, ToolsUsageStep } from './tools-shared';
 
 export async function fetchClassycarHub(): Promise<Record<string, unknown>> {
-  return toolsGet('/api/v1/admin/classycar/hub', 'Unable to load ClassyCar hub');
+  return toolsGet('/api/v1/admin/classycar/hub', 'Unable to load Npod-Auto hub');
 }
 
 export async function fetchClassycarDealers(q?: string): Promise<Record<string, unknown>[]> {
@@ -84,6 +84,6 @@ export async function classycarKybAction(
   return toolsPost(
     `/api/v1/admin/classycar/dealers/${encodeURIComponent(String(id))}/kyb/${encodeURIComponent(action)}`,
     reason ? { reason } : {},
-    `ClassyCar KYB ${action} failed`
+    `Npod-Auto KYB ${action} failed`
   );
 }

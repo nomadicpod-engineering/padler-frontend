@@ -135,7 +135,7 @@ export default function ClassycarStuckPage() {
   return (
     <PadlerShell>
       <PageHeader
-        eyebrow="ClassyCar"
+        eyebrow="Npod-Auto"
         title="Stuck payments"
         subtitle="Pending bookings and initiated sales with a payment reference — match wallet settlement to confirm."
         actions={
@@ -147,7 +147,7 @@ export default function ClassycarStuckPage() {
 
       <p className="mb-4 text-sm text-slate-500">
         <Link href="/tools/classycar" className="font-semibold text-blue-700 hover:underline">
-          ← ClassyCar hub
+          ← Npod-Auto hub
         </Link>
         {' · '}
         <Link href="/tools/payment" className="font-semibold text-blue-700 hover:underline">

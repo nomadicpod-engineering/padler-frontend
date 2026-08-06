@@ -54,7 +54,7 @@ export default function NpodStuckPage() {
       <PageHeader
         eyebrow="NPod"
         title="Stuck ops"
-        subtitle="Cross-product stuck counts. Heal via Trip Jotter / ClassyCar / Drift Tools hubs."
+        subtitle="Cross-product stuck counts. Heal via Trip Jotter / Npod-Auto / Drift Tools hubs."
         actions={
           <Button type="button" onClick={() => void load()} disabled={loading}>
             {loading ? 'Loading…' : 'Refresh'}
@@ -86,7 +86,7 @@ export default function NpodStuckPage() {
               <Link href="/tools/trip-jotter/stuck">Trip Jotter stuck</Link>
             </Button>
             <Button variant="secondary" asChild>
-              <Link href="/tools/classycar/stuck">ClassyCar stuck</Link>
+              <Link href="/tools/classycar/stuck">Npod-Auto stuck</Link>
             </Button>
             <Button variant="secondary" asChild>
               <Link href="/tools/drift/stuck">Npod Rider stuck</Link>

@@ -451,11 +451,11 @@ export default function Customer360Page() {
                 toolsLabel="Open Drift tools"
               />
               <AdapterPanel
-                title="Classycar ops"
+                title="Npod-Auto ops"
                 snapshot={adapters?.classycar}
                 loading={adaptersLoading}
                 toolsHref="/tools/classycar"
-                toolsLabel="Open ClassyCar tools"
+                toolsLabel="Open Npod-Auto tools"
               />
               <AdapterPanel
                 title="Npod ops"

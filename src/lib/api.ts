@@ -2142,7 +2142,7 @@ export async function fetchAdapterDriftSafety(): Promise<AdapterSnapshot> {
 }
 
 export async function fetchAdapterClassycarOps(): Promise<AdapterSnapshot> {
-  return getAdapter('/api/v1/admin/adapters/classycar/ops', 'Classycar ops failed');
+  return getAdapter('/api/v1/admin/adapters/classycar/ops', 'Npod-Auto ops failed');
 }
 
 export async function fetchAdapterNpodOps(): Promise<AdapterSnapshot> {

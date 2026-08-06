@@ -103,7 +103,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/tools', label: 'All tools', icon: Wrench },
       { href: '/tools/trip-jotter', label: 'Trip Jotter', icon: TicketsPlane },
       { href: '/tools/drift', label: 'Npod Rider', icon: Bike },
-      { href: '/tools/classycar', label: 'Classycar', icon: Car },
+      { href: '/tools/classycar', label: 'Npod-Auto', icon: Car },
       { href: '/tools/npod', label: 'Npod', icon: UserRound },
       { href: '/tools/withdrawals', label: 'Failed bank payouts', icon: TriangleAlert }
     ]

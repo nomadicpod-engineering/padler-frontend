@@ -23,20 +23,20 @@ import { getOnboardingJourney, isForbiddenError, listOnboardingJourneys } from '
 import type { OnboardingJourney } from '@/lib/types';
 import { ONBOARDING_LIFECYCLE_STATUSES } from '@/lib/types';
 import { cn, formatDateTime } from '@/lib/utils';
+import { productDisplayLabel } from '@/lib/product-labels';
 
 type OnboardingView = 'all' | 'needs_review';
 
 const PRODUCT_TABS: { id: string; label: string; productKey: string }[] = [
   { id: 'all', label: 'All products', productKey: '' },
   { id: 'trip-jotter', label: 'Trip Jotter', productKey: 'trip-jotter' },
-  { id: 'classycar', label: 'Classycar', productKey: 'classycar' },
+  { id: 'classycar', label: productDisplayLabel('classycar'), productKey: 'classycar' },
   { id: 'drift', label: 'Npod Rider', productKey: 'drift' },
   { id: 'npod', label: 'Npod', productKey: 'npod' }
 ];
 
 function productLabel(productKey?: string | null): string {
-  if (!productKey) return 'Product';
-  return PRODUCT_TABS.find((t) => t.productKey === productKey)?.label ?? productKey;
+  return productDisplayLabel(productKey);
 }
 
 
@@ -327,7 +327,7 @@ export default function OnboardingOpsPage() {
             ))}
           </ul>
           <p className="mt-2 text-amber-900/80">
-            Trip Jotter, Classycar, and Npod Rider usually need platform access on that product. Npod
+            Trip Jotter, Npod-Auto, and Npod Rider usually need platform access on that product. Npod
             loads with your Padler sign-in.
           </p>
         </div>
