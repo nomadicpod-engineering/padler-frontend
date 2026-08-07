@@ -220,6 +220,7 @@ type PadlerEnvelope<T> = {
   message?: string;
   detail?: string;
   data?: T;
+  statusCode?: number;
 };
 
 export async function loginPadler(email: string, password: string): Promise<{
