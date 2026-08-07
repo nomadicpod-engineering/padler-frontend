@@ -27,6 +27,13 @@ export const padlerApi = axios.create({
 
 padlerApi.interceptors.request.use((config) => {
   if (isAuthPublicPath(config.url)) {
+    // Stale session tokens must not ride along — Spring OAuth2 returns 401 on
+    // permitAll routes when an invalid Bearer JWT is present.
+    if (config.headers) {
+      delete config.headers.Authorization;
+      delete config.headers.authorization;
+    }
+    (config as RetryConfig).skipAuthRefresh = true;
     return config;
   }
   const session = getAuthSession();

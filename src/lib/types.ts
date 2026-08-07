@@ -120,6 +120,8 @@ export interface InviteResult {
   detail?: string;
   invitationToken?: string;
   expiresAt?: string;
+  resent?: boolean;
+  designation?: string;
 }
 
 export interface AcceptInviteResult {

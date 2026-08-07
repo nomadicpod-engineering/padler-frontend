@@ -2521,17 +2521,42 @@ export async function invitePadlerAdmin(body: {
       body
     );
     if (json?.success === false || !json?.data) {
-      throw new PadlerApiError(json?.message ?? json?.detail ?? 'Unable to send invite');
+      throw new PadlerApiError(json?.message ?? json?.detail ?? 'Unable to send invite', json?.statusCode);
     }
     const data = json.data;
     return {
       status: data.status != null ? String(data.status) : undefined,
       detail: data.detail != null ? String(data.detail) : undefined,
       invitationToken: data.invitationToken != null ? String(data.invitationToken) : undefined,
-      expiresAt: data.expiresAt != null ? String(data.expiresAt) : undefined
+      expiresAt: data.expiresAt != null ? String(data.expiresAt) : undefined,
+      resent: data.resent === true,
+      designation: data.designation != null ? String(data.designation) : undefined
     };
   } catch (e) {
     throw toPadlerApiError(e, 'Unable to send invite');
+  }
+}
+
+export async function resendPadlerInvite(body: { email: string }): Promise<InviteResult> {
+  try {
+    const { data: json } = await padlerApi.post<PadlerEnvelope<Record<string, unknown>>>(
+      '/api/v1/padler/auth/invite/resend',
+      body
+    );
+    if (json?.success === false || !json?.data) {
+      throw new PadlerApiError(json?.message ?? json?.detail ?? 'Unable to resend invite', json?.statusCode);
+    }
+    const data = json.data;
+    return {
+      status: data.status != null ? String(data.status) : undefined,
+      detail: data.detail != null ? String(data.detail) : undefined,
+      invitationToken: data.invitationToken != null ? String(data.invitationToken) : undefined,
+      expiresAt: data.expiresAt != null ? String(data.expiresAt) : undefined,
+      resent: true,
+      designation: data.designation != null ? String(data.designation) : undefined
+    };
+  } catch (e) {
+    throw toPadlerApiError(e, 'Unable to resend invite');
   }
 }
 
