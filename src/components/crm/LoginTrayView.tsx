@@ -10,9 +10,12 @@ import { Card } from '@/components/ui/card';
 import { serialNumber } from '@/components/ui/data-table';
 import { FieldLabel, Input, Select } from '@/components/ui/field';
 import { FilterBar, PageHeader, Pagination, StatePanel } from '@/components/ui/page';
-import { isForbiddenError, listLoginTray } from '@/lib/api';
+import { isForbiddenError, listLoginTray, resendPadlerInvite } from '@/lib/api';
 import type { LoginTrayItem } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
+import { canInviteTeam } from '@/lib/types';
+import { getAuthSession } from '@/lib/auth';
+import { toast } from 'sonner';
 
 
 function statusTone(status?: string): 'success' | 'warning' | 'danger' | 'neutral' {
@@ -21,6 +24,17 @@ function statusTone(status?: string): 'success' | 'warning' | 'danger' | 'neutra
   if (s === 'FAILURE' || s === 'UNVERIFIED') return 'danger';
   if (s === 'INVITE') return 'warning';
   return 'neutral';
+}
+
+function canResendInviteRow(row: LoginTrayItem): boolean {
+  if (!row.email) return false;
+  const event = (row.eventType ?? '').toUpperCase();
+  return (
+    event === 'INVITE_CREATED' ||
+    event === 'INVITE_EXPIRED' ||
+    event === 'INVITE_RESENT' ||
+    (row.status === 'INVITE' && event !== 'INVITE_ACCEPTED' && !row.summary?.toLowerCase().includes('accepted'))
+  );
 }
 
 type LoginTrayViewProps = {
@@ -47,6 +61,12 @@ export function LoginTrayView({ partyType, title, subtitle, showServiceColumn }:
   const [caseEmail, setCaseEmail] = useState('');
   const [caseUserId, setCaseUserId] = useState('');
   const [caseName, setCaseName] = useState('');
+  const [canInvite, setCanInvite] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCanInvite(canInviteTeam(getAuthSession()?.designation));
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -87,6 +107,21 @@ export function LoginTrayView({ partyType, title, subtitle, showServiceColumn }:
     setCaseUserId(row.customerUserId ?? row.partyKey ?? '');
     setCaseName(row.email ?? row.partyKey ?? '');
     setCaseOpen(true);
+  };
+
+  const onResendInvite = async (row: LoginTrayItem) => {
+    const email = row.email?.trim();
+    if (!email) return;
+    setResendingEmail(email);
+    try {
+      const result = await resendPadlerInvite({ email });
+      toast.success(result.detail || `Invite resent to ${email}`);
+      void load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Unable to resend invite');
+    } finally {
+      setResendingEmail(null);
+    }
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -233,6 +268,17 @@ export function LoginTrayView({ partyType, title, subtitle, showServiceColumn }:
                         {row.reachOutHint ? (
                           <Button asChild variant="link" size="sm" className="h-auto min-h-0 p-0">
                             <a href={row.reachOutHint}>Email</a>
+                          </Button>
+                        ) : null}
+                        {partyType === 'STAFF' && canInvite && canResendInviteRow(row) ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            disabled={resendingEmail === row.email}
+                            onClick={() => void onResendInvite(row)}
+                          >
+                            {resendingEmail === row.email ? 'Resending…' : 'Resend invite'}
                           </Button>
                         ) : null}
                         {partyType === 'CUSTOMER' ? (

@@ -14,6 +14,7 @@ export {
   replayDeadLetter,
   getCrmTimeline,
   invitePadlerAdmin,
+  resendPadlerInvite,
   acceptPadlerInvite,
   listLoginTray,
   listOnboardingJourneys,
