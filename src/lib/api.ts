@@ -736,6 +736,55 @@ export async function reassignSeatsAfterPayment(
   }
 }
 
+export type HealSeatsConfirmResult = {
+  bookingReference?: string;
+  confirmed?: boolean;
+  paymentStatus?: string;
+  paidAmount?: number;
+  expectedAmount?: number;
+  seatNumbers?: string[];
+  sessionId?: string;
+  detail?: string;
+};
+
+export async function healSeatsAndConfirm(
+  bookingReference: string,
+  body: {
+    newTripId?: number;
+    newSeatNumbers: string[];
+    reason?: string;
+    sourceAction?: string;
+    actionBy?: string;
+  }
+): Promise<HealSeatsConfirmResult> {
+  const ref = bookingReference.trim();
+  if (!ref) {
+    throw new Error('Booking reference is required');
+  }
+  if (!Array.isArray(body.newSeatNumbers) || body.newSeatNumbers.length === 0) {
+    throw new Error('newSeatNumbers is required');
+  }
+  try {
+    const { data: json } = await padlerApi.post<PadlerEnvelope<HealSeatsConfirmResult>>(
+      `/api/v1/admin/bookings/${encodeURIComponent(ref)}/heal-seats-and-confirm`,
+      {
+        newTripId: body.newTripId,
+        newSeatNumbers: body.newSeatNumbers,
+        reason: body.reason ?? 'Heal stuck checkout (pend seats and confirm)',
+        sourceAction: body.sourceAction ?? 'PADLER_TJ_STUCK_HEAL',
+        actionBy: body.actionBy
+      }
+    );
+    if (json?.success === false) {
+      throw new Error(json?.message ?? json?.detail ?? 'Heal failed');
+    }
+    return (json?.data ?? {}) as HealSeatsConfirmResult;
+  } catch (e) {
+    if (e instanceof Error && !axios.isAxiosError(e)) throw e;
+    throw new Error(readApiError(e, 'Heal failed'));
+  }
+}
+
 export type TerminalListItem = {
   id: number;
   name: string;

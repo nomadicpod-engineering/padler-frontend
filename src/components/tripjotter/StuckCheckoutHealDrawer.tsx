@@ -9,14 +9,9 @@ import {
   fetchAdminBookingLines,
   fetchBookingById,
   fetchTripForBookingDetail,
-  reassignSeatsAfterPayment
+  healSeatsAndConfirm
 } from '@/lib/api';
 import { formatDateTime, formatMoney } from '@/lib/utils';
-import {
-  reconcileTripJotterCheckout,
-  type CheckoutReconcileResult,
-  type CheckoutSeatOutcome
-} from '@/lib/api/trip-jotter';
 import {
   buildSeatsFromVehicleSeats,
   getRowLayoutForCapacity,
@@ -66,17 +61,6 @@ export function toStuckCheckoutRow(row: Record<string, unknown>): StuckCheckoutR
   };
 }
 
-
-function summarizeResult(result: CheckoutReconcileResult): string {
-  const bits = [
-    `settled=${String(result.walletSettled)}`,
-    `confirmed=${String(result.confirmed)}`,
-    result.needsSeatAction ? 'needsSeatAction=true' : null,
-    result.detail ? String(result.detail) : null
-  ].filter(Boolean);
-  return bits.join(' · ');
-}
-
 function Row({ label, value }: { label: string; value: string | undefined }) {
   return (
     <div className="grid gap-1 border-b border-slate-100 py-2.5 last:border-b-0 sm:grid-cols-[130px_1fr]">
@@ -92,10 +76,8 @@ export function StuckCheckoutHealDrawer({ open, row, onClose, onResolved }: Prop
 
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [reassignBusy, setReassignBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [result, setResult] = useState<CheckoutReconcileResult | null>(null);
   const [detail, setDetail] = useState<BookingDetail | null>(null);
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [lines, setLines] = useState<AdminBookingLine[]>([]);
@@ -103,10 +85,8 @@ export function StuckCheckoutHealDrawer({ open, row, onClose, onResolved }: Prop
   const [activeLineIdx, setActiveLineIdx] = useState(0);
   const activeLineIdxRef = useRef(0);
 
-  const needsSeatAction = Boolean(result?.needsSeatAction);
-  const tripId = Number(result?.tripId ?? row?.tripId ?? 0);
-  const tripSource = String(result?.tripSource ?? '').toUpperCase();
-  const isMiddleware = tripSource === 'MIDDLEWARE';
+  const tripId = Number(row?.tripId ?? detail?.tripId ?? trip?.id ?? 0);
+  const editable = lines.length > 0;
 
   const loadTrip = useCallback(
     async (id: number) => {
@@ -127,11 +107,11 @@ export function StuckCheckoutHealDrawer({ open, row, onClose, onResolved }: Prop
     [companyEmail]
   );
 
-  /** Traveller, trip and seat map load on open so staff can inspect before reconciling. */
   const loadContext = useCallback(async () => {
     if (!ref) return;
     setLoading(true);
     setError(null);
+    setMessage(null);
     try {
       const bookingLines = await fetchAdminBookingLines(ref);
       setLines(bookingLines);
@@ -172,13 +152,11 @@ export function StuckCheckoutHealDrawer({ open, row, onClose, onResolved }: Prop
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !busy && !reassignBusy) onClose();
+      if (e.key === 'Escape' && !busy) onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, busy, reassignBusy, onClose]);
-
-  const editable = needsSeatAction && !isMiddleware && lines.length > 0;
+  }, [open, busy, onClose]);
 
   const gridModel = useMemo(() => {
     const empty = {
@@ -193,7 +171,6 @@ export function StuckCheckoutHealDrawer({ open, row, onClose, onResolved }: Prop
     const ourSeats = new Set(
       lines.map((l) => (l.seatNumber ?? '').trim().toUpperCase()).filter(Boolean)
     );
-    /** In edit mode our own seats are freed so they can be re-picked. */
     const vs = editable
       ? vehicleSeats.map((s) => (ourSeats.has(s.number.trim().toUpperCase()) ? { ...s, status: 'AVAILABLE' } : s))
       : vehicleSeats;
@@ -227,34 +204,15 @@ export function StuckCheckoutHealDrawer({ open, row, onClose, onResolved }: Prop
     [editable, lines.length]
   );
 
-  const runReconcile = useCallback(async () => {
-    if (!ref) return;
-    setBusy(true);
-    setError(null);
-    setMessage(null);
-    try {
-      const next = await reconcileTripJotterCheckout(ref);
-      setResult(next);
-      setMessage(`Match ${ref}: ${summarizeResult(next)}`);
-      if (next.confirmed) {
-        onResolved?.();
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Reconcile failed');
-    } finally {
-      setBusy(false);
-    }
-  }, [ref, onResolved]);
-
-  const runReassignThenReconcile = useCallback(async () => {
+  const runHeal = useCallback(async () => {
     if (!ref || !trip) return;
-    setReassignBusy(true);
+    setBusy(true);
     setError(null);
     setMessage(null);
     try {
       const seats = draftSeats.map((s) => s.trim());
       if (seats.length !== lines.length || seats.some((s) => !s)) {
-        setError('Choose one seat for each passenger line.');
+        setError('Choose one available seat for each passenger line.');
         return;
       }
       const seen = new Set<string>();
@@ -266,31 +224,41 @@ export function StuckCheckoutHealDrawer({ open, row, onClose, onResolved }: Prop
         }
         seen.add(u);
       }
-      await reassignSeatsAfterPayment(ref, {
+      const result = await healSeatsAndConfirm(ref, {
         newSeatNumbers: seats,
-        reason: 'Reassign seats from Trip Jotter stuck heal (after payment)',
-        sourceAction: 'PADLER_TJ_STUCK_REASSIGN'
+        reason: 'Heal stuck checkout from Trip Jotter tools (payment check, pend seats, confirm)',
+        sourceAction: 'PADLER_TJ_STUCK_HEAL'
       });
-      setMessage(`Seats reassigned for ${ref}. Reconciling to confirm and send email…`);
-      const next = await reconcileTripJotterCheckout(ref);
-      setResult(next);
-      setMessage(`Match ${ref}: ${summarizeResult(next)}`);
-      if (next.confirmed) {
+      const paid =
+        result.paidAmount != null && Number.isFinite(Number(result.paidAmount))
+          ? formatMoney(Number(result.paidAmount))
+          : undefined;
+      const expected =
+        result.expectedAmount != null && Number.isFinite(Number(result.expectedAmount))
+          ? formatMoney(Number(result.expectedAmount))
+          : undefined;
+      const amountBit =
+        paid || expected ? ` · paid ${paid ?? '—'} / seats ${expected ?? '—'}` : '';
+      setMessage(
+        result.confirmed
+          ? `Healed ${ref}: confirmed${amountBit}. ${result.detail ?? ''}`.trim()
+          : `Heal ${ref} finished without confirm${amountBit}. ${result.detail ?? ''}`.trim()
+      );
+      if (result.confirmed) {
         onResolved?.();
       } else {
         await loadContext();
         if (tripId > 0) await loadTrip(tripId);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Reassign / reconcile failed');
+      setError(e instanceof Error ? e.message : 'Heal failed');
     } finally {
-      setReassignBusy(false);
+      setBusy(false);
     }
   }, [ref, trip, draftSeats, lines.length, onResolved, tripId, loadContext, loadTrip]);
 
   if (!row) return null;
 
-  const seatOutcomes: CheckoutSeatOutcome[] = Array.isArray(result?.seats) ? result!.seats! : [];
   const passengerName = detail?.customerName?.trim() || lines[0]?.passengerName?.trim() || undefined;
   const routeLabel =
     detail?.routeLabel?.trim()
@@ -308,27 +276,18 @@ export function StuckCheckoutHealDrawer({ open, row, onClose, onResolved }: Prop
         if (!next) onClose();
       }}
       title={ref || 'Unfinished payment'}
-      description="Match the payment and confirm the booking when seats are clear."
+      description="Check payment, hold available seats, then confirm the booking."
       width="lg"
       footer={
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             variant="primary"
-            disabled={!ref || busy || reassignBusy}
-            onClick={() => void runReconcile()}
+            disabled={!ref || !trip || !editable || busy || loading}
+            onClick={() => void runHeal()}
           >
-            {busy ? 'Matching…' : 'Match payment'}
+            {busy ? 'Healing…' : 'Heal & confirm'}
           </Button>
-          {needsSeatAction ? (
-            <Button
-              type="button"
-              disabled={!trip || !editable || busy || reassignBusy || loading}
-              onClick={() => void runReassignThenReconcile()}
-            >
-              {reassignBusy ? 'Saving & confirming…' : 'Save seats & confirm'}
-            </Button>
-          ) : null}
         </div>
       }
     >
@@ -386,7 +345,6 @@ export function StuckCheckoutHealDrawer({ open, row, onClose, onResolved }: Prop
               }
             />
             <Row label="Trip status" value={trip?.status} />
-            {tripSource ? <Row label="Trip source" value={tripSource} /> : null}
           </dl>
         </DrawerSection>
 
@@ -409,19 +367,12 @@ export function StuckCheckoutHealDrawer({ open, row, onClose, onResolved }: Prop
           )}
         </DrawerSection>
 
-        {isMiddleware ? (
-          <p className="text-sm text-slate-500">
-            This trip is from the external ticket system. Local seat changes may not clear a pending
-            ticket. Prefer matching payment again after upstream settles.
-          </p>
-        ) : null}
-
         {editable ? (
           <p className="text-sm text-slate-500">
-            Payment is settled but seats need action. Picking for passenger{' '}
-            {Math.min(activeLineIdx + 1, lines.length)} of {lines.length}
+            Pick an available seat for passenger {Math.min(activeLineIdx + 1, lines.length)} of{' '}
+            {lines.length}
             {lines[activeLineIdx]?.passengerName ? ` (${lines[activeLineIdx]?.passengerName})` : ''}.
-            Save, then the traveller confirmation email sends on successful confirm.
+            Heal checks payment, holds every selected seat, then confirms and sends the traveller email.
           </p>
         ) : null}
 
@@ -440,23 +391,6 @@ export function StuckCheckoutHealDrawer({ open, row, onClose, onResolved }: Prop
           </DrawerSection>
         ) : !loading && tripId > 0 ? (
           <p className="text-sm text-slate-500">No vehicle seats on trip {tripId}.</p>
-        ) : null}
-
-        {seatOutcomes.length > 0 ? (
-          <DrawerSection title="Seat check">
-            <ul className="space-y-2 text-sm text-slate-700">
-              {seatOutcomes.map((s, i) => (
-                <li key={`${s.seatNumber ?? 'x'}-${i}`}>
-                  <strong>{s.outcome ?? '—'}</strong>
-                  {' · '}
-                  seat {s.seatNumber ?? '—'}
-                  {s.passengerName ? ` · ${s.passengerName}` : ''}
-                  {s.seatStatus ? ` · vehicle=${s.seatStatus}` : ''}
-                  {s.detail ? <div className="text-slate-500">{s.detail}</div> : null}
-                </li>
-              ))}
-            </ul>
-          </DrawerSection>
         ) : null}
       </div>
     </SideDrawer>
