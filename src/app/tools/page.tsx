@@ -9,6 +9,7 @@ import {
   Bike,
   Car,
   LayoutDashboard,
+  Ticket,
   TicketsPlane,
   TriangleAlert,
   UserRound,
@@ -51,6 +52,12 @@ const hubs = [
     title: 'Payments',
     description: 'Wallet payment list and payment detail.',
     icon: Banknote
+  },
+  {
+    href: '/tools/bookings',
+    title: 'Bookings',
+    description: 'Trip Jotter booking list and detail across all companies.',
+    icon: Ticket
   },
   {
     href: '/tools/withdrawals',

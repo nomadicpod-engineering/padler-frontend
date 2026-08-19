@@ -671,6 +671,7 @@ export interface BookingItem {
   departureTime?: string;
   /** Display name of the transport company (e.g. when listing all companies) */
   companyName?: string;
+  companyLogoUrl?: string;
   status: BookingStatus;
   amount: number;
   createdAt: string;
