@@ -7,6 +7,7 @@ import { Badge, StatusBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ListSearch, PageHeader, StatePanel } from '@/components/ui/page';
+import { CompanyLogo } from '@/components/ui/company-logo';
 import {
   fetchTripJotterCompanies,
   fetchTripJotterCompanyUsage,
@@ -206,11 +207,18 @@ export default function TripJotterHubPage() {
               <Link key={id || companyTitle(c)} href={href} className="group block">
                 <Card className="h-full transition duration-200 group-hover:-translate-y-0.5 group-hover:border-blue-200 group-hover:shadow-md motion-reduce:transform-none">
                   <CardHeader className="mb-3">
-                    <div className="min-w-0">
-                      <CardTitle className="truncate">{companyTitle(c)}</CardTitle>
-                      <CardDescription className="truncate">
-                        {c.email || c.userId || '—'}
-                      </CardDescription>
+                    <div className="flex items-start gap-3 min-w-0">
+                      <CompanyLogo
+                        logoUrl={c.companyLogo}
+                        name={companyTitle(c)}
+                        size="md"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="truncate">{companyTitle(c)}</CardTitle>
+                        <CardDescription className="truncate">
+                          {c.email || c.userId || '—'}
+                        </CardDescription>
+                      </div>
                     </div>
                     {c.verificationStatus ? (
                       <StatusBadge status={c.verificationStatus} />

@@ -33,6 +33,7 @@ async function unwrap<T>(promise: Promise<{ data: PadlerEnvelope<T> }>, fallback
 export type TripJotterCompany = {
   id?: number;
   companyName?: string;
+  companyLogo?: string;
   email?: string;
   userId?: string;
   tripJotterId?: string;

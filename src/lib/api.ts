@@ -345,6 +345,10 @@ function mapBookingApiRow(row: Record<string, unknown>): BookingItem {
     routeLabel: String(row.route ?? 'N/A'),
     companyName:
       row.companyName != null && String(row.companyName).trim() !== '' ? String(row.companyName).trim() : undefined,
+    companyLogoUrl:
+      row.companyLogoUrl != null && String(row.companyLogoUrl).trim() !== ''
+        ? String(row.companyLogoUrl).trim()
+        : undefined,
     departureTime: dep != null && String(dep).trim() !== '' ? String(dep) : undefined,
     status: normalizeBookingStatus(row.status as string | undefined),
     amount: Number(row.price ?? 0),

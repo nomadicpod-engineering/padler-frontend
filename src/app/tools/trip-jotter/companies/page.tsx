@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/badge';
 import { DataTable, serialColumn, type DataTableColumn } from '@/components/ui/data-table';
 import { ListSearch, PageHeader, StatePanel } from '@/components/ui/page';
+import { CompanyLogo } from '@/components/ui/company-logo';
 import { fetchTripJotterCompanies, type TripJotterCompany } from '@/lib/api/trip-jotter';
 import { isForbiddenError } from '@/lib/api';
 
@@ -52,7 +53,15 @@ export default function TripJotterCompaniesPage() {
       {
         header: 'Company',
         id: 'company',
-        cell: ({ row }) => row.original.companyName || row.original.userId || '—'
+        cell: ({ row }) => {
+          const name = row.original.companyName || row.original.userId || '—';
+          return (
+            <div className="flex min-w-0 items-center gap-2">
+              <CompanyLogo logoUrl={row.original.companyLogo} name={name} size="sm" />
+              <span className="truncate">{name}</span>
+            </div>
+          );
+        }
       },
       {
         header: 'Email',

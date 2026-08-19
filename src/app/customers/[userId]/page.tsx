@@ -10,6 +10,7 @@ import { CommandRequestDrawer } from '@/components/crm/CommandRequestDrawer';
 import { CreateCaseDrawer } from '@/components/crm/CreateCaseDrawer';
 import { CrmTabs } from '@/components/crm/CrmTabs';
 import { OnboardingJourneyDetail } from '@/components/crm/OnboardingJourneyDetail';
+import { WalletRestrictionsPanel } from '@/components/wallet/WalletRestrictionsPanel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -98,6 +99,9 @@ export default function Customer360Page() {
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
   const [onboardingError, setOnboardingError] = useState<string | null>(null);
 
+  const [walletRestrictionSnap, setWalletRestrictionSnap] = useState<AdapterSnapshot | null>(null);
+  const [walletRestrictionLoading, setWalletRestrictionLoading] = useState(false);
+
   const load = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
@@ -117,6 +121,25 @@ export default function Customer360Page() {
       setLoading(false);
     }
   }, [userId]);
+
+  const loadWalletRestrictions = useCallback(async () => {
+    if (!userId) return;
+    setWalletRestrictionLoading(true);
+    try {
+      setWalletRestrictionSnap(await fetchAdapterWallet(userId));
+    } catch (e) {
+      setWalletRestrictionSnap({
+        dependencyHealth: 'DOWN',
+        errorMessage: e instanceof Error ? e.message : 'Wallet adapter failed'
+      });
+    } finally {
+      setWalletRestrictionLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    void loadWalletRestrictions();
+  }, [loadWalletRestrictions]);
 
   const loadAdapters = useCallback(async () => {
     if (!userId) return;
@@ -321,6 +344,17 @@ export default function Customer360Page() {
 
           {tab === 'overview' ? (
             <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <div className="lg:col-span-2">
+                <WalletRestrictionsPanel
+                  userId={userId}
+                  walletSnapshot={walletRestrictionSnap ?? undefined}
+                  loading={walletRestrictionLoading}
+                  onUpdated={() => {
+                    void loadWalletRestrictions();
+                    if (adapters) void loadAdapters();
+                  }}
+                />
+              </div>
               <Card>
                 <CardHeader>
                   <CardTitle>Identity</CardTitle>
@@ -386,8 +420,8 @@ export default function Customer360Page() {
                     </li>
                   </ul>
                   <p className="mt-3 text-sm text-slate-500">
-                    Mutating product actions stay behind governed commands — adapters here are
-                    read-only.
+                    Use wallet restrictions above for finance controls. Other mutating product
+                    actions stay behind governed commands — adapters here are read-only.
                   </p>
                 </CardContent>
               </Card>
@@ -414,6 +448,17 @@ export default function Customer360Page() {
 
           {tab === 'adapters' ? (
             <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <div className="lg:col-span-2">
+                <WalletRestrictionsPanel
+                  userId={userId}
+                  walletSnapshot={walletSnap ?? walletRestrictionSnap ?? undefined}
+                  loading={(adaptersLoading || walletRestrictionLoading) && !walletSnap && !walletRestrictionSnap}
+                  onUpdated={() => {
+                    void loadWalletRestrictions();
+                    void loadAdapters();
+                  }}
+                />
+              </div>
               <AdapterPanel
                 title="Identity"
                 snapshot={identitySnap}
@@ -423,8 +468,8 @@ export default function Customer360Page() {
                 title="Wallet"
                 snapshot={walletSnap}
                 loading={adaptersLoading && !walletSnap}
-                toolsHref="/tools"
-                toolsLabel="Wallet / Tools"
+                toolsHref="/tools/wallet"
+                toolsLabel="Wallet tools"
               />
               <AdapterPanel
                 title="Wealth"
