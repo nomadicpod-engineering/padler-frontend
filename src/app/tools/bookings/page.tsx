@@ -12,8 +12,10 @@ import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { FieldLabel, Input, Select } from '@/components/ui/field';
 import { FilterBar, PageHeader, Pagination, StatePanel } from '@/components/ui/page';
 import { BookingItem, type BookingStatus } from '@/lib/types';
-import { BOOKINGS_PAGE_SIZE, fetchBookingsPage } from '@/lib/api';
+import { fetchBookingsPage } from '@/lib/api';
 import { formatDateTime, formatMoney } from '@/lib/utils';
+
+const PAGE_SIZE_OPTIONS = [5, 10, 20, 50, 100] as const;
 
 const ALL_BOOKING_STATUSES: (BookingStatus | 'ALL')[] = [
   'ALL',
@@ -54,6 +56,7 @@ export default function BookingsPage() {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<BookingStatus | 'ALL'>('ALL');
+  const [pageSize, setPageSize] = useState(10);
 
   const displayRows = useMemo(() => {
     const filtered = rows.filter((row) => {
@@ -80,7 +83,7 @@ export default function BookingsPage() {
         allCompanies: true,
         transportCompanyEmail: '',
         page,
-        size: BOOKINGS_PAGE_SIZE
+        size: pageSize
       });
       setRows(result.rows);
       setTotalPages(result.totalPages);
@@ -93,7 +96,7 @@ export default function BookingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, reloadNonce]);
+  }, [page, pageSize, reloadNonce]);
 
   useEffect(() => {
     void runLoad();
@@ -106,7 +109,7 @@ export default function BookingsPage() {
         id: 'sn',
         cell: ({ row }) => (
           <span className="tabular-nums text-slate-500">
-            {page * BOOKINGS_PAGE_SIZE + row.index + 1}
+            {page * pageSize + row.index + 1}
           </span>
         )
       },
@@ -173,11 +176,12 @@ export default function BookingsPage() {
         cell: ({ row }) => formatDateTime(row.original.createdAt)
       }
     ],
-    [page]
+    [page, pageSize]
   );
 
   return (
     <PadlerShell>
+      <div className="mx-2 px-2">
       <PageHeader
         eyebrow="Fix problems"
         title="Bookings"
@@ -217,7 +221,7 @@ export default function BookingsPage() {
 
       {searchQuery.trim() || statusFilter !== 'ALL' ? (
         <p className="mb-4 text-xs text-slate-500">
-          Search and status apply to the current page only ({BOOKINGS_PAGE_SIZE} rows from the server).
+          Search and status apply to the current page only ({pageSize} rows from the server).
         </p>
       ) : null}
 
@@ -242,13 +246,29 @@ export default function BookingsPage() {
               }
             }}
           />
-          {(rows.length > 0 || totalElements > 0) && totalPages > 1 ? (
-            <div className="border-t border-slate-100 px-4 py-3">
-              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3">
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <span>Rows per page</span>
+              <Select
+                value={String(pageSize)}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(0);
+                }}
+                className="w-20"
+              >
+                {PAGE_SIZE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </Select>
             </div>
-          ) : null}
+            {totalPages > 1 ? (
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+            ) : null}
+          </div>
         </Card>
       ) : null}
+      </div>
     </PadlerShell>
   );
 }
